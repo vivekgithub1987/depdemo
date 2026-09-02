@@ -1,121 +1,90 @@
 pipeline {
 
-agent any
+    agent any
 
-tools {
-
-    maven 'Maven-3.9'
-
-    jdk 'JDK17'
-
-}
-
-stages {
-
-    stage('Checkout') {
-
-        steps {
-
-            checkout scm
-
-        }
-
+    tools {
+        maven 'Maven-3.9'
+        jdk 'JDK17'
     }
 
-    stage('Build') {
+    stages {
 
-        steps {
-
-            bat 'mvn clean install -DskipTests'
-
-        }
-
-    }
-
-    stage('Docker Version') {
-
-        steps {
-
-            bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" version'
-
-        }
-
-    }
-
-    stage('Docker Build') {
-
-        steps {
-
-            bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" build -t depdemo:latest .'
-
-        }
-
-    }
-
-    stage('Docker Tag') {
-
-        steps {
-
-            bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" tag depdemo:latest vpdocker2025/depdemo:latest'
-
-        }
-
-    }
-
-    stage('Docker Images') {
-
-        steps {
-
-            bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" images'
-
-        }
-
-    }
-
-    stage('Docker Push') {
-
-        steps {
-
-            withCredentials([
-
-                usernamePassword(
-
-                    credentialsId: 'dockerhub-creds',
-
-                    usernameVariable: 'DOCKER_USER',
-
-                    passwordVariable: 'DOCKER_PASS'
-
-                )
-
-            ]) {
-
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" login -u %DOCKER_USER% -p %DOCKER_PASS%'
-
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" push vpdocker2025/depdemo:latest'
-
+        stage('Checkout') {
+            steps {
+                checkout scm
             }
-
         }
 
+        stage('Build') {
+            steps {
+                bat 'mvn clean install -DskipTests'
+            }
+        }
+
+        stage('Docker Version') {
+            steps {
+                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" version'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" build -t depdemo:latest .'
+            }
+        }
+
+        stage('Docker Tag') {
+            steps {
+                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" tag depdemo:latest vpdocker2025/depdemo:latest'
+            }
+        }
+
+        stage('Docker Images') {
+            steps {
+                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" images'
+            }
+        }
+
+        stage('Docker Login & Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                    bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" push vpdocker2025/depdemo:latest'
+                }
+            }
+        }
+
+        stage('Deploy To EC2') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+
+                    bat '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@13.61.24.31 "
+                    docker stop depdemo || true &&
+                    docker rm depdemo || true &&
+                    docker pull vpdocker2025/depdemo:latest &&
+                    docker run -d -p 8080:8080 --name depdemo vpdocker2025/depdemo:latest &&
+                    docker ps
+                    "
+                    '''
+                }
+            }
+        }
     }
 
-}
+    post {
+        success {
+            echo 'CI/CD Pipeline Executed Successfully'
+        }
 
-post {
-
-    success {
-
-        echo 'Build Successful'
-
+        failure {
+            echo 'Pipeline Failed'
+        }
     }
-
-    failure {
-
-        echo 'Build Failed'
-
-    }
-
-}
-
 }
