@@ -63,7 +63,12 @@ pipeline {
 		stage('Test SSH') {
 		    steps {
 		        sshagent(credentials: ['ec2-ssh-key']) {
-		            bat 'ssh -o StrictHostKeyChecking=no ec2-user@13.61.24.31 hostname'
+		            bat '''
+		            set SSH_AUTH_SOCK
+		            set SSH_AGENT_PID
+		            ssh-add -L
+		            ssh -vvv -o StrictHostKeyChecking=no ec2-user@13.61.24.31 hostname
+		            '''
 		        }
 		    }
 		}
