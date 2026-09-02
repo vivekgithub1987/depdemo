@@ -63,7 +63,7 @@ pipeline {
 		stage('Deploy To EC2') {
 		    steps {
 		        bat '''
-		        ssh -i D:\\AWS\\lms-key.pem -o StrictHostKeyChecking=no ec2-user@13.61.24.31 "docker stop depdemo || true; docker rm depdemo || true; docker pull vpdocker2025/depdemo:latest; docker run -d -p 8080:8080 --name depdemo vpdocker2025/depdemo:latest; docker ps"
+		        ssh -i C:\\ProgramData\\Jenkins\\.ssh\\lms-key.pem -o StrictHostKeyChecking=no ec2-user@13.61.24.31 "docker stop depdemo >/dev/null 2>&1 || true; docker rm depdemo >/dev/null 2>&1 || true; docker pull vpdocker2025/depdemo:latest; docker run -d -p 8080:8080 --name depdemo vpdocker2025/depdemo:latest; docker ps"
 		        '''
 		    }
 		}
