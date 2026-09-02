@@ -62,9 +62,9 @@ pipeline {
 
 		stage('Test SSH') {
 		    steps {
-		        sshagent(credentials: ['ec2-ssh-key']) {
-		            bat 'ssh -v -o StrictHostKeyChecking=no ec2-user@13.61.24.31 "hostname"'
-		        }
+		        bat '''
+		        ssh -i D:\\AWS\\lms-key.pem -o StrictHostKeyChecking=no ec2-user@13.61.24.31 "hostname"
+		        '''
 		    }
 		}
     }
